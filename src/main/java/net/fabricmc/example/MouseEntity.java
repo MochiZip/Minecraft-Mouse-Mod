@@ -1,61 +1,49 @@
 package net.fabricmc.example;
 
-import net.minecraft.world.entity.monster.Monster;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.level.Level;
-import net.minecraft.world.entity.ai.goal.*;
-import net.minecraft.world.entity.ai.goal.target.NearestAttackableTargetGoal;
-import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.phys.AABB;
-import java.util.List;
+import net.minecraft.world.entity.MobCategory;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.SpawnEggItem;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class MouseEntity extends Monster {
-    private int eatCooldown = 0;
+public class ExampleMod implements ModInitializer {
+    public static final Logger LOGGER = LoggerFactory.getLogger("mousemod");
 
-    public MouseEntity(EntityType<? extends Monster> type, Level world) {
-        super(type, world);
-    }
+    // Fix: Using ResourceLocation.parse to comply with the 26.3 mapping requirements
+    public static final EntityType<MouseEntity> MOUSE = Registry.register(
+        BuiltInRegistries.ENTITY_TYPE,
+        ResourceLocation.parse("mousemod:mouse"),
+        EntityType.Builder.of(MouseEntity::new, MobCategory.MONSTER).dimensions(0.3f, 0.3f).build("mouse")
+    );
+
+    public static final Item MOUSE_SPAWN_EGG = Registry.register(
+        BuiltInRegistries.ITEM,
+        ResourceLocation.parse("mousemod:mouse_spawn_egg"),
+        new SpawnEggItem(MOUSE, 0x990000, 0x111111, new Item.Properties())
+    );
+
+    public static final Item CHEESE = Registry.register(
+        BuiltInRegistries.ITEM,
+        ResourceLocation.parse("mousemod:cheese"),
+        new Item.Properties()
+    );
 
     @Override
-    protected void registerGoals() {
-        this.goalSelector.addGoal(1, new FloatGoal(this));
-        this.goalSelector.addGoal(2, new MeleeAttackGoal(this, 1.2D, false));
-        this.goalSelector.addGoal(3, new WaterAvoidingRandomStrollGoal(this, 1.0D));
-        this.goalSelector.addGoal(4, new LookAtPlayerGoal(this, Player.class, 8.0F));
+    public void onInitialize() {
+        LOGGER.info("Initializing Cheese-Eating Boss Mouse Mod!");
 
-        this.targetSelector.addGoal(1, new NearestAttackableTargetGoal<>(this, Player.class, true));
-    }
-
-    @Override
-    public void tick() {
-        super.tick();
-        
-        if (this.eatCooldown > 0) {
-            this.eatCooldown--;
-        }
-
-        // Run cheese scanning logic on the server side every 10 ticks (0.5 seconds)
-        if (!this.level().isClientSide && this.isAlive() && this.tickCount % 10 == 0 && this.eatCooldown == 0) {
-            // Box area checking 6 blocks in all directions
-            AABB boundingBox = this.getBoundingBox().inflate(6.0D, 3.0D, 6.0D);
-            List<ItemEntity> itemsNearby = this.level().getEntitiesOfClass(ItemEntity.class, boundingBox);
-
-            for (ItemEntity itemEntity : itemsNearby) {
-                // Check if the item on the floor is our custom Cheese item
-                if (itemEntity.isAlive() && itemEntity.getItem().is(ExampleMod.CHEESE)) {
-                    // Navigate to the cheese on the floor
-                    this.getNavigation().moveTo(itemEntity.getX(), itemEntity.getY(), itemEntity.getZ(), 1.3D);
-
-                    // If close enough to "bite" it (within 1.2 blocks)
-                    if (this.distanceToSqr(itemEntity) < 1.44D) {
-                        itemEntity.getItem().shrink(1); // Eat 1 cheese from the ground stack
-                        this.heal(10.0F); // Eating cheese heals the mouse 10 health!
-                        this.eatCooldown = 60; // 3-second cooldown before eating more
-                        break;
-                    }
-                }
-            }
-        }
+        FabricDefaultAttributeRegistry.register(MOUSE, MouseEntity.createMonsterAttributes()
+            .add(Attributes.MAX_HEALTH, 45.0D)
+            .add(Attributes.MOVEMENT_SPEED, 0.3D)
+            .add(Attributes.FOLLOW_RANGE, 8.0D)
+            .add(Attributes.ATTACK_DAMAGE, 9.0D)
+            .add(Attributes.ATTACK_SPEED, 0.95D));
     }
 }
