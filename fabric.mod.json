@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "mousemod",
+  "version": "1.0.0",
+  "name": "Minecraft Mouse Mod",
+  "description": "An aggressive cheese-eating mouse boss mod.",
+  "authors": [
+    "MochiZip"
+  ],
+  "contact": {},
+  "license": "CC0-1.0",
+  "icon": "assets/mousemod/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.fabricmc.example.ExampleMod"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.15.0",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
